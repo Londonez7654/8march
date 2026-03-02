@@ -21,35 +21,51 @@
             height: 100vh;
             overflow: hidden;
             font-family: 'Comfortaa', sans-serif;
-            background: #000;
+            /* Красивый градиент вместо чёрного */
+            background: linear-gradient(160deg, #1a1a2e, #16213e, #0f3460, #533483);
+            background-size: 400% 400%;
+            animation: bgShift 10s ease infinite;
         }
 
-        /* === ФОТО ПЕРСОНАЖА (весь экран) === */
-        .character-bg {
+        @keyframes bgShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* === ФОТО ПЕРСОНАЖА === */
+        .character-img {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            background-size: cover;
-            background-position: center top;
-            background-repeat: no-repeat;
-            transition: opacity 0.5s ease;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            max-height: 55vh;
+            max-width: 90vw;
+            object-fit: contain;
+            transition: opacity 0.4s ease;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5));
         }
 
-        .character-bg.fade {
+        .character-img.fade {
             opacity: 0;
         }
 
-        /* Затемнение снизу для текста */
-        .overlay {
+        /* Декоративные частицы на фоне */
+        .bg-particle {
             position: fixed;
-            bottom: 0; left: 0;
-            width: 100%;
-            height: 55%;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
-            z-index: 1;
+            border-radius: 50%;
             pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
         }
 
         /* === ДИАЛОГОВЫЙ БОКС === */
@@ -59,7 +75,7 @@
             left: 10px;
             right: 10px;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.65);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(16px);
             border-radius: 20px;
             padding: 18px 20px 16px;
@@ -68,6 +84,11 @@
             min-height: 120px;
             display: flex;
             flex-direction: column;
+            cursor: pointer;
+        }
+
+        .dialog-box.hidden {
+            display: none;
         }
 
         .speaker-name {
@@ -86,26 +107,15 @@
             min-height: 50px;
         }
 
-        .dialog-text .char {
-            opacity: 0;
-            display: inline;
-            animation: typeChar 0.03s forwards;
-        }
-
-        @keyframes typeChar {
-            to { opacity: 1; }
-        }
-
         /* Треугольник "тапни" */
         .tap-indicator {
             align-self: flex-end;
             margin-top: 8px;
             opacity: 0;
-            animation: blink 1s ease-in-out infinite;
         }
 
         .tap-indicator.show {
-            opacity: 1;
+            animation: blink 1s ease-in-out infinite;
         }
 
         @keyframes blink {
@@ -138,7 +148,7 @@
         }
 
         .choice-question {
-            background: rgba(0, 0, 0, 0.65);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(16px);
             border-radius: 20px;
             padding: 16px 20px;
@@ -159,7 +169,6 @@
         }
 
         .choice-btn {
-            position: relative;
             background: rgba(255, 107, 157, 0.15);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 107, 157, 0.3);
@@ -172,7 +181,7 @@
             transition: all 0.3s;
             opacity: 0;
             transform: scale(0.3);
-            overflow: hidden;
+            text-align: left;
         }
 
         .choice-btn.visible {
@@ -181,7 +190,7 @@
         }
 
         .choice-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.95) !important;
             background: rgba(255, 107, 157, 0.4);
         }
 
@@ -189,7 +198,7 @@
             margin-right: 8px;
         }
 
-        /* === ВЗРЫВ (для появления вариантов) === */
+        /* === ВЗРЫВ === */
         .explosion-particle {
             position: fixed;
             pointer-events: none;
@@ -199,14 +208,8 @@
         }
 
         @keyframes particleExplode {
-            0% {
-                opacity: 1;
-                transform: translate(0, 0) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(var(--tx), var(--ty)) scale(0);
-            }
+            0% { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
         }
 
         .spark {
@@ -227,12 +230,13 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 200;
             display: none;
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            cursor: pointer;
         }
 
         .prize-overlay.show {
@@ -246,11 +250,11 @@
         }
 
         @keyframes heartPrize {
-            0%, 100% { transform: scale(1) rotate(0deg); }
+            0%, 100% { transform: scale(1); }
             15% { transform: scale(1.15) rotate(-3deg); }
             30% { transform: scale(1) rotate(3deg); }
-            45% { transform: scale(1.1) rotate(-2deg); }
-            60% { transform: scale(1) rotate(0deg); }
+            45% { transform: scale(1.1); }
+            60% { transform: scale(1); }
         }
 
         .prize-text {
@@ -273,6 +277,13 @@
             margin-top: 12px;
         }
 
+        .prize-tap {
+            margin-top: 30px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
         .prize-confetti {
             position: fixed;
             pointer-events: none;
@@ -284,26 +295,12 @@
             0% { opacity: 1; transform: translateY(0) rotate(0deg); }
             100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
         }
-
-        /* === ТАПНИ ДЛЯ ПРОДОЛЖЕНИЯ (приз) === */
-        .prize-tap {
-            margin-top: 30px;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            animation: blink 1.5s ease-in-out infinite;
-        }
-
-        /* === СКРЫТЬ === */
-        .hidden {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Фото персонажа -->
-    <div class="character-bg" id="charBg"></div>
-    <div class="overlay"></div>
+    <!-- Фото персонажа (img вместо background) -->
+    <img class="character-img" id="charImg" src="basic.png" alt="">
 
     <!-- Диалоговый бокс -->
     <div class="dialog-box" id="dialogBox">
@@ -340,7 +337,7 @@
         const username = user?.username || user?.first_name || 'unknown';
 
         // === ЭЛЕМЕНТЫ ===
-        const charBg = document.getElementById('charBg');
+        const charImg = document.getElementById('charImg');
         const dialogBox = document.getElementById('dialogBox');
         const dialogText = document.getElementById('dialogText');
         const speakerName = document.getElementById('speakerName');
@@ -355,9 +352,26 @@
         let fullText = '';
         let typingTimeout = null;
         let canTap = false;
-        let currentPhotoIndex = 0; // 0 = basic, 1 = basicZ
+        let currentPhotoIndex = 0;
+        let currentCallback = null; // <-- сохраняем callback
 
-        // Чередование фоток
+        // === ФОНОВЫЕ ЧАСТИЦЫ ===
+        function createBgParticle() {
+            const p = document.createElement('div');
+            p.className = 'bg-particle';
+            const size = 3 + Math.random() * 6;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.background = `hsl(${300 + Math.random() * 60}, 70%, 70%)`;
+            p.style.animationDuration = (6 + Math.random() * 8) + 's';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 15000);
+        }
+        setInterval(createBgParticle, 500);
+        for (let i = 0; i < 10; i++) setTimeout(createBgParticle, i * 200);
+
+        // === ЧЕРЕДОВАНИЕ ФОТОК ===
         function getBasicPhoto() {
             const photo = currentPhotoIndex === 0 ? 'basic.png' : 'basicZ.png';
             currentPhotoIndex = currentPhotoIndex === 0 ? 1 : 0;
@@ -366,11 +380,11 @@
 
         // === СМЕНА ФОТО ===
         function setPhoto(filename) {
-            charBg.classList.add('fade');
+            charImg.classList.add('fade');
             setTimeout(() => {
-                charBg.style.backgroundImage = `url('${filename}')`;
-                charBg.classList.remove('fade');
-            }, 300);
+                charImg.src = filename;
+                charImg.classList.remove('fade');
+            }, 400);
         }
 
         // === ПЕЧАТАНИЕ ТЕКСТА ===
@@ -378,6 +392,7 @@
             isTyping = true;
             canTap = false;
             fullText = text;
+            currentCallback = callback || null;
             dialogText.innerHTML = '';
             tapIndicator.classList.remove('show');
 
@@ -385,45 +400,59 @@
 
             function typeNext() {
                 if (i < text.length) {
-                    const span = document.createElement('span');
-                    span.className = 'char';
-                    span.style.animationDelay = '0s';
-
                     if (text[i] === '\n') {
                         dialogText.appendChild(document.createElement('br'));
                     } else {
+                        const span = document.createElement('span');
                         span.textContent = text[i];
+                        span.style.opacity = '0';
+                        span.style.animation = 'none';
                         dialogText.appendChild(span);
+                        // Плавное появление
+                        requestAnimationFrame(() => {
+                            span.style.transition = 'opacity 0.05s';
+                            span.style.opacity = '1';
+                        });
                     }
-
                     i++;
                     typingTimeout = setTimeout(typeNext, 35);
                 } else {
-                    isTyping = false;
-                    canTap = true;
-                    tapIndicator.classList.add('show');
-                    if (callback) callback();
+                    finishTyping();
                 }
             }
 
             typeNext();
         }
 
+        function finishTyping() {
+            isTyping = false;
+            dialogText.innerHTML = fullText.replace(/\n/g, '<br>');
+
+            if (currentCallback) {
+                // Есть callback — значит после текста будет действие
+                // НЕ даём тапать, сразу вызываем callback
+                canTap = false;
+                tapIndicator.classList.remove('show');
+                currentCallback();
+                currentCallback = null;
+            } else {
+                // Обычный диалог — можно тапать дальше
+                canTap = true;
+                tapIndicator.classList.add('show');
+            }
+        }
+
         function skipTyping() {
             if (!isTyping) return;
             clearTimeout(typingTimeout);
-            dialogText.innerHTML = fullText.replace(/\n/g, '<br>');
-            isTyping = false;
-            canTap = true;
-            tapIndicator.classList.add('show');
+            finishTyping();
         }
 
         // === ВЗРЫВ ===
         function createExplosion(x, y, callback) {
-            const colors = ['#ff6b9d', '#ff5722', '#ffeb3b', '#ff9800', '#e91e63', '#fff'];
+            const colors = ['#ff6b9d', '#ff5722', '#ffeb3b', '#ff9800', '#e91e63', '#fff', '#ba68c8'];
             const emojis = ['✨', '💥', '⚡', '🔥', '💫', '⭐'];
 
-            // Частицы
             for (let i = 0; i < 20; i++) {
                 const p = document.createElement('div');
                 p.className = 'explosion-particle';
@@ -442,8 +471,7 @@
                 setTimeout(() => p.remove(), 700);
             }
 
-            // Искры-эмодзи
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 6; i++) {
                 const s = document.createElement('div');
                 s.className = 'spark';
                 s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
@@ -459,7 +487,7 @@
                 setTimeout(() => s.remove(), 800);
             }
 
-            if (callback) setTimeout(callback, 200);
+            if (callback) setTimeout(callback, 250);
         }
 
         // === ПОКАЗАТЬ ВАРИАНТЫ ===
@@ -472,22 +500,22 @@
             const oldBtns = choicesContainer.querySelectorAll('.choice-btn');
             oldBtns.forEach(b => b.remove());
 
-            // Создать кнопки с задержкой взрывов
+            const emojiLabels = ['🖤', '💙', '🤍'];
+
             choices.forEach((choice, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'choice-btn';
-
-                const emojiLabels = ['🖤', '💙', '🤍'];
                 btn.innerHTML = `<span class="emoji-label">${emojiLabels[index]}</span>${choice.text}`;
 
+                // Клик по варианту
                 btn.addEventListener('click', () => {
                     handleChoice(choice);
                 });
 
                 choicesContainer.appendChild(btn);
 
-                // Взрыв и появление с задержкой
-                const delay = 600 + index * 800;
+                // Взрыв → появление кнопки с задержкой
+                const delay = 400 + index * 900;
 
                 setTimeout(() => {
                     const rect = btn.getBoundingClientRect();
@@ -506,19 +534,14 @@
             choicesContainer.classList.remove('show');
             dialogBox.classList.remove('hidden');
 
-            // Смена фото
             setPhoto(choice.photo);
 
-            // Показать реакцию
             speakerName.textContent = 'Русланчекс';
             typeText(choice.response, () => {
-                // После реакции — показать приз
-                canTap = false;
-                tapIndicator.classList.remove('show');
-
+                // После реакции — пауза и приз
                 setTimeout(() => {
                     showPrize();
-                }, 2000);
+                }, 2500);
             });
         }
 
@@ -547,11 +570,15 @@
 
             // Отправить данные боту
             if (tg.initData) {
-                tg.sendData(JSON.stringify({
-                    action: 'prize_won',
-                    prize: 'heart',
-                    user: username
-                }));
+                try {
+                    tg.sendData(JSON.stringify({
+                        action: 'prize_won',
+                        prize: 'heart',
+                        user: username
+                    }));
+                } catch (e) {
+                    console.log('sendData error:', e);
+                }
             }
 
             // Тап для продолжения
@@ -562,7 +589,7 @@
             }, { once: true });
         }
 
-        // === ПОСЛЕ ПРИЗА — ПРОДОЛЖЕНИЕ (добавишь потом) ===
+        // === ПОСЛЕ ПРИЗА ===
         function continueAfterPrize() {
             setPhoto(getBasicPhoto());
             speakerName.textContent = 'Русланчекс';
@@ -576,7 +603,7 @@
                 type: 'dialog',
                 speaker: 'Русланчекс',
                 text: 'прпрпрпрпрпр дианочка любимая, с 8 марта дорогая, я кое чо подготовил харашо, ты тапай пальчиками кароче',
-                photo: 'auto' // auto = чередование basic/basicZ
+                photo: 'auto'
             },
             {
                 type: 'dialog',
@@ -612,15 +639,14 @@
         // === ЗАПУСК ШАГА ===
         function runStep(index) {
             if (index >= scenario.length) return;
-
             const step = scenario[index];
+            currentStep = index;
 
             if (step.type === 'dialog') {
                 const photo = step.photo === 'auto' ? getBasicPhoto() : step.photo;
                 setPhoto(photo);
                 speakerName.textContent = step.speaker;
-                typeText(step.text);
-                currentStep = index;
+                typeText(step.text); // без callback — обычный тап дальше
             }
 
             if (step.type === 'choice') {
@@ -628,27 +654,25 @@
                 setPhoto(photo);
                 speakerName.textContent = step.speaker;
                 typeText(step.question, () => {
-                    // После печати вопроса — показать варианты
-                    canTap = false;
-                    tapIndicator.classList.remove('show');
+                    // После допечатывания — показать варианты
                     setTimeout(() => {
                         showChoices(step.question, step.choices);
-                    }, 500);
+                    }, 600);
                 });
-                currentStep = index;
             }
         }
 
-        // === ТАП ПО ЭКРАНУ ===
-        dialogBox.addEventListener('click', (e) => {
+        // === ТАП ПО ДИАЛОГУ ===
+        dialogBox.addEventListener('click', () => {
             if (isTyping) {
                 skipTyping();
                 return;
             }
-
             if (!canTap) return;
 
-            // Следующий шаг
+            canTap = false;
+            tapIndicator.classList.remove('show');
+
             const nextIndex = currentStep + 1;
             if (nextIndex < scenario.length) {
                 runStep(nextIndex);
@@ -656,8 +680,9 @@
         });
 
         // === СТАРТ ===
-        setPhoto('basic.png');
+        charImg.src = 'basic.png';
         currentPhotoIndex = 1; // следующий будет basicZ
+
         setTimeout(() => {
             runStep(0);
         }, 800);
