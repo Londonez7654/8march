@@ -6,463 +6,661 @@
     <title>С 8 Марта! 💐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
         body {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #fce4ec, #f8bbd0, #f48fb1);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Comfortaa', sans-serif;
+            background: #000;
+        }
+
+        /* === ФОТО ПЕРСОНАЖА (весь экран) === */
+        .character-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            transition: opacity 0.5s ease;
+        }
+
+        .character-bg.fade {
+            opacity: 0;
+        }
+
+        /* Затемнение снизу для текста */
+        .overlay {
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 100%;
+            height: 55%;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* === ДИАЛОГОВЫЙ БОКС === */
+        .dialog-box {
+            position: fixed;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 18px 20px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            min-height: 120px;
             display: flex;
             flex-direction: column;
+        }
+
+        .speaker-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ff6b9d;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+        }
+
+        .dialog-text {
+            font-size: 15px;
+            color: #fff;
+            line-height: 1.6;
+            flex: 1;
+            min-height: 50px;
+        }
+
+        .dialog-text .char {
+            opacity: 0;
+            display: inline;
+            animation: typeChar 0.03s forwards;
+        }
+
+        @keyframes typeChar {
+            to { opacity: 1; }
+        }
+
+        /* Треугольник "тапни" */
+        .tap-indicator {
+            align-self: flex-end;
+            margin-top: 8px;
+            opacity: 0;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        .tap-indicator.show {
+            opacity: 1;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .tap-triangle {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #ff6b9d;
+        }
+
+        /* === ВАРИАНТЫ ОТВЕТА === */
+        .choices-container {
+            position: fixed;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .choices-container.show {
+            display: flex;
+        }
+
+        .choice-question {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 16px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .choice-question .speaker-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ff6b9d;
+            margin-bottom: 6px;
+        }
+
+        .choice-question .question-text {
+            font-size: 15px;
+            color: #fff;
+            line-height: 1.5;
+        }
+
+        .choice-btn {
+            position: relative;
+            background: rgba(255, 107, 157, 0.15);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 107, 157, 0.3);
+            border-radius: 16px;
+            padding: 16px 20px;
+            color: #fff;
+            font-size: 15px;
+            font-family: 'Comfortaa', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0;
+            transform: scale(0.3);
+            overflow: hidden;
+        }
+
+        .choice-btn.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .choice-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 107, 157, 0.4);
+        }
+
+        .choice-btn .emoji-label {
+            margin-right: 8px;
+        }
+
+        /* === ВЗРЫВ (для появления вариантов) === */
+        .explosion-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            border-radius: 50%;
+            animation: particleExplode 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes particleExplode {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+
+        .spark {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            font-size: 20px;
+            animation: sparkFly 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes sparkFly {
+            0% { opacity: 1; transform: translate(0, 0) scale(1.5); }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.3); }
+        }
+
+        /* === СЕРДЦЕ ПОДАРОК === */
+        .prize-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            display: none;
             align-items: center;
             justify-content: center;
-            font-family: 'Georgia', serif;
-            overflow-x: hidden;
-            position: relative;
+            flex-direction: column;
         }
 
-        body.dark {
-            background: linear-gradient(135deg, #4a0028, #880e4f, #ad1457);
+        .prize-overlay.show {
+            display: flex;
         }
 
-        /* === Падающие лепестки === */
-        .petal {
-            position: fixed;
-            top: -60px;
-            animation: fall linear infinite;
-            z-index: 0;
-            pointer-events: none;
+        .prize-heart {
+            font-size: 120px;
+            animation: heartPrize 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(255, 0, 80, 0.6));
         }
 
-        @keyframes fall {
-            0% {
-                transform: translateY(-60px) rotate(0deg) translateX(0);
-                opacity: 1;
-            }
-            25% { transform: translateY(25vh) rotate(90deg) translateX(20px); }
-            50% { transform: translateY(50vh) rotate(180deg) translateX(-20px); }
-            75% { transform: translateY(75vh) rotate(270deg) translateX(15px); }
-            100% {
-                transform: translateY(110vh) rotate(360deg) translateX(-10px);
-                opacity: 0.2;
-            }
+        @keyframes heartPrize {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            15% { transform: scale(1.15) rotate(-3deg); }
+            30% { transform: scale(1) rotate(3deg); }
+            45% { transform: scale(1.1) rotate(-2deg); }
+            60% { transform: scale(1) rotate(0deg); }
         }
 
-        /* === Карточка === */
-        .card {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(12px);
-            border-radius: 28px;
-            padding: 40px 28px;
-            max-width: 370px;
-            width: 90%;
-            text-align: center;
-            z-index: 1;
-            box-shadow: 0 20px 60px rgba(233, 30, 99, 0.25);
-            animation: cardAppear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .dark .card {
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        }
-
-        @keyframes cardAppear {
-            from {
-                opacity: 0;
-                transform: scale(0.5) translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        /* === Блеск на карточке === */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent 40%,
-                rgba(255, 255, 255, 0.3) 50%,
-                transparent 60%
-            );
-            animation: shimmer 3s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%); }
-            100% { transform: translateX(100%) translateY(100%); }
-        }
-
-        /* === Букет === */
-        .bouquet {
-            font-size: 70px;
-            animation: bouquetAppear 1.5s ease-out;
-            display: inline-block;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-        }
-
-        @keyframes bouquetAppear {
-            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
-            50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
-            70% { transform: scale(0.9) rotate(-5deg); }
-            100% { transform: scale(1) rotate(0deg); }
-        }
-
-        /* === Восьмёрка === */
-        .eight-container {
-            position: relative;
-            display: inline-block;
-            margin: 15px 0;
-        }
-
-        .eight {
-            font-size: 72px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #e91e63, #ff5722, #e91e63, #ff5722);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 3s ease infinite, pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-        }
-
-        .march {
-            font-size: 20px;
-            color: #e91e63;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin-top: -5px;
-        }
-
-        .dark .march { color: #f48fb1; }
-
-        /* === Заголовок === */
-        .title {
+        .prize-text {
             font-size: 26px;
-            color: #c2185b;
-            margin: 12px 0;
-            font-weight: bold;
-            opacity: 0;
-            animation: slideUp 0.8s ease-out 0.5s forwards;
-        }
-
-        .dark .title { color: #f8bbd0; }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* === Имя === */
-        .name {
-            font-size: 22px;
-            color: #e91e63;
-            font-style: italic;
-            opacity: 0;
-            animation: slideUp 0.8s ease-out 0.8s forwards;
-        }
-
-        .dark .name { color: #ff80ab; }
-
-        /* === Разделитель === */
-        .divider {
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(to right, transparent, #e91e63, transparent);
-            margin: 20px auto;
-            opacity: 0;
-            animation: slideUp 0.8s ease-out 1s forwards;
-        }
-
-        /* === Текст === */
-        .message {
-            font-size: 15px;
-            line-height: 1.9;
-            color: #5d4037;
-            margin: 15px 0;
-            opacity: 0;
-            animation: slideUp 1s ease-out 1.2s forwards;
-        }
-
-        .dark .message { color: #ffccbc; }
-
-        /* === Летающие сердечки === */
-        .hearts-row {
-            font-size: 26px;
-            margin: 18px 0;
-            opacity: 0;
-            animation: slideUp 0.8s ease-out 2s forwards;
-        }
-
-        .hearts-row span {
-            display: inline-block;
-            animation: float 2s ease-in-out infinite;
-            margin: 0 3px;
-        }
-
-        .hearts-row span:nth-child(1) { animation-delay: 0s; }
-        .hearts-row span:nth-child(2) { animation-delay: 0.2s; }
-        .hearts-row span:nth-child(3) { animation-delay: 0.4s; }
-        .hearts-row span:nth-child(4) { animation-delay: 0.6s; }
-        .hearts-row span:nth-child(5) { animation-delay: 0.8s; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* === Кнопка === */
-        .btn-love {
-            background: linear-gradient(135deg, #e91e63, #ff5722);
-            color: white;
-            border: none;
-            padding: 15px 36px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-family: 'Georgia', serif;
-            cursor: pointer;
-            margin-top: 18px;
-            opacity: 0;
-            animation: slideUp 0.8s ease-out 2.3s forwards;
-            transition: all 0.3s;
-            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.35);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-love:active {
-            transform: scale(0.93);
-        }
-
-        /* === Скрытое сообщение === */
-        .secret {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.8s ease, margin 0.5s ease, padding 0.5s ease;
-            background: linear-gradient(135deg, #fce4ec, #fff9c4);
-            border-radius: 16px;
-            font-size: 15px;
-            color: #880e4f;
-            line-height: 1.7;
-            margin-top: 0;
-            padding: 0 15px;
-        }
-
-        .dark .secret {
-            background: linear-gradient(135deg, #880e4f33, #ff6f0033);
-            color: #fce4ec;
-        }
-
-        .secret.show {
-            max-height: 300px;
+            color: #ff6b9d;
+            font-weight: 700;
             margin-top: 20px;
-            padding: 20px 15px;
+            text-shadow: 0 0 20px rgba(255, 107, 157, 0.8);
+            animation: prizeGlow 1.5s ease-in-out infinite alternate;
         }
 
-        /* === Взрыв === */
-        .explosion {
+        @keyframes prizeGlow {
+            from { text-shadow: 0 0 20px rgba(255, 107, 157, 0.5); }
+            to { text-shadow: 0 0 40px rgba(255, 107, 157, 1), 0 0 80px rgba(255, 107, 157, 0.5); }
+        }
+
+        .prize-sub {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 12px;
+        }
+
+        .prize-confetti {
             position: fixed;
             pointer-events: none;
-            z-index: 999;
-            font-size: 28px;
-            animation: explode 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            z-index: 201;
+            animation: confettiDrop 3s ease-out forwards;
         }
 
-        @keyframes explode {
-            0% {
-                opacity: 1;
-                transform: translate(0, 0) scale(1) rotate(0deg);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(var(--tx), var(--ty)) scale(0.3) rotate(var(--rot));
-            }
+        @keyframes confettiDrop {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
         }
 
-        /* === Конфетти === */
-        .confetti {
-            position: fixed;
-            width: 8px;
-            height: 8px;
-            pointer-events: none;
-            z-index: 998;
-            animation: confettiFall 2.5s ease-out forwards;
+        /* === ТАПНИ ДЛЯ ПРОДОЛЖЕНИЯ (приз) === */
+        .prize-tap {
+            margin-top: 30px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            animation: blink 1.5s ease-in-out infinite;
         }
 
-        @keyframes confettiFall {
-            0% {
-                opacity: 1;
-                transform: translate(0, 0) rotate(0deg);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(var(--tx), var(--ty)) rotate(720deg);
-            }
+        /* === СКРЫТЬ === */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div class="bouquet">💐</div>
+    <!-- Фото персонажа -->
+    <div class="character-bg" id="charBg"></div>
+    <div class="overlay"></div>
 
-        <div class="eight-container">
-            <div class="eight">8</div>
-            <div class="march">марта</div>
-        </div>
-
-        <div class="title">С Праздником!</div>
-        <div class="name">Дорогая и любимая ✨</div>
-
-        <div class="divider"></div>
-
-        <div class="message">
-            В этот прекрасный весенний день<br>
-            хочу пожелать тебе счастья,<br>
-            тепла и бесконечной радости! 🌸<br><br>
-
-            Ты наполняешь мир вокруг<br>
-            светом и красотой 🌟<br><br>
-
-            Пусть каждый твой день<br>
-            будет таким же прекрасным,<br>
-            как ты сама! 💫
-        </div>
-
-        <div class="hearts-row">
-            <span>🌹</span>
-            <span>💖</span>
-            <span>🌸</span>
-            <span>💖</span>
-            <span>🌹</span>
-        </div>
-
-        <button class="btn-love" id="loveBtn" onclick="showLove()">
-            💝 Нажми сюда
-        </button>
-
-        <div class="secret" id="secret">
-            ✨ Ты — самое лучшее, что есть в моей жизни! ✨<br><br>
-            Я безумно рад(а), что ты у меня есть 🥰<br>
-            Люблю тебя всем сердцем! 💕<br><br>
-            С 8 Марта, моё солнышко! ☀️🌷
+    <!-- Диалоговый бокс -->
+    <div class="dialog-box" id="dialogBox">
+        <div class="speaker-name" id="speakerName">Русланчекс</div>
+        <div class="dialog-text" id="dialogText"></div>
+        <div class="tap-indicator" id="tapIndicator">
+            <div class="tap-triangle"></div>
         </div>
     </div>
 
+    <!-- Варианты ответа -->
+    <div class="choices-container" id="choicesContainer">
+        <div class="choice-question">
+            <div class="speaker-name">Русланчекс</div>
+            <div class="question-text" id="questionText"></div>
+        </div>
+    </div>
+
+    <!-- Приз -->
+    <div class="prize-overlay" id="prizeOverlay">
+        <div class="prize-heart">❤️</div>
+        <div class="prize-text">Ты выиграла!!! 🎉</div>
+        <div class="prize-sub">Подарок — сердечко от Русланчекса 💝</div>
+        <div class="prize-tap">тапни для продолжения</div>
+    </div>
+
     <script>
-        // === Telegram ===
+        // === TELEGRAM ===
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        // Тёмная тема
-        if (tg.colorScheme === 'dark') {
-            document.body.classList.add('dark');
+        const user = tg.initDataUnsafe?.user;
+        const username = user?.username || user?.first_name || 'unknown';
+
+        // === ЭЛЕМЕНТЫ ===
+        const charBg = document.getElementById('charBg');
+        const dialogBox = document.getElementById('dialogBox');
+        const dialogText = document.getElementById('dialogText');
+        const speakerName = document.getElementById('speakerName');
+        const tapIndicator = document.getElementById('tapIndicator');
+        const choicesContainer = document.getElementById('choicesContainer');
+        const questionText = document.getElementById('questionText');
+        const prizeOverlay = document.getElementById('prizeOverlay');
+
+        // === СОСТОЯНИЕ ===
+        let currentStep = 0;
+        let isTyping = false;
+        let fullText = '';
+        let typingTimeout = null;
+        let canTap = false;
+        let currentPhotoIndex = 0; // 0 = basic, 1 = basicZ
+
+        // Чередование фоток
+        function getBasicPhoto() {
+            const photo = currentPhotoIndex === 0 ? 'basic.png' : 'basicZ.png';
+            currentPhotoIndex = currentPhotoIndex === 0 ? 1 : 0;
+            return photo;
         }
 
-        // === Лепестки ===
-        const petals = ['🌸', '🌺', '🌷', '💮', '🏵️', '🌹', '💐', '✿'];
-        
-        function createPetal() {
-            const el = document.createElement('div');
-            el.className = 'petal';
-            el.textContent = petals[Math.floor(Math.random() * petals.length)];
-            el.style.left = Math.random() * 100 + 'vw';
-            el.style.fontSize = (14 + Math.random() * 22) + 'px';
-            el.style.animationDuration = (5 + Math.random() * 7) + 's';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 14000);
+        // === СМЕНА ФОТО ===
+        function setPhoto(filename) {
+            charBg.classList.add('fade');
+            setTimeout(() => {
+                charBg.style.backgroundImage = `url('${filename}')`;
+                charBg.classList.remove('fade');
+            }, 300);
         }
 
-        setInterval(createPetal, 400);
-        for (let i = 0; i < 12; i++) setTimeout(createPetal, i * 150);
+        // === ПЕЧАТАНИЕ ТЕКСТА ===
+        function typeText(text, callback) {
+            isTyping = true;
+            canTap = false;
+            fullText = text;
+            dialogText.innerHTML = '';
+            tapIndicator.classList.remove('show');
 
-        // === Взрыв при нажатии ===
-        let clickCount = 0;
-        const messages = [
-            '💝 Ты лучшая!',
-            '💖 Обожаю тебя!',
-            '🥰 Ты моё счастье!',
-            '💕 Люблю!',
-            '✨ Ты сияешь!'
-        ];
+            let i = 0;
 
-        function showLove() {
-            const btn = document.getElementById('loveBtn');
-            const rect = btn.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
+            function typeNext() {
+                if (i < text.length) {
+                    const span = document.createElement('span');
+                    span.className = 'char';
+                    span.style.animationDelay = '0s';
 
-            // Взрыв эмодзи
-            const emojis = ['❤️','💖','💕','💗','💓','🌹','🌸','💐','😍','🥰','✨','🌺','💝','🦋'];
-            for (let i = 0; i < 25; i++) {
-                const el = document.createElement('div');
-                el.className = 'explosion';
-                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                el.style.left = cx + 'px';
-                el.style.top = cy + 'px';
+                    if (text[i] === '\n') {
+                        dialogText.appendChild(document.createElement('br'));
+                    } else {
+                        span.textContent = text[i];
+                        dialogText.appendChild(span);
+                    }
 
-                const angle = (Math.PI * 2 * i) / 25 + Math.random() * 0.3;
-                const dist = 100 + Math.random() * 150;
-                el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
-                el.style.setProperty('--ty', Math.sin(angle) * dist - 60 + 'px');
-                el.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
-
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 1800);
+                    i++;
+                    typingTimeout = setTimeout(typeNext, 35);
+                } else {
+                    isTyping = false;
+                    canTap = true;
+                    tapIndicator.classList.add('show');
+                    if (callback) callback();
+                }
             }
 
-            // Конфетти
-            const colors = ['#e91e63','#ff5722','#ff9800','#4caf50','#2196f3','#9c27b0','#ffeb3b'];
-            for (let i = 0; i < 40; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = cx + 'px';
-                c.style.top = cy + 'px';
-                c.style.background = colors[Math.floor(Math.random() * colors.length)];
-                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                c.style.width = (4 + Math.random() * 8) + 'px';
-                c.style.height = (4 + Math.random() * 8) + 'px';
+            typeNext();
+        }
+
+        function skipTyping() {
+            if (!isTyping) return;
+            clearTimeout(typingTimeout);
+            dialogText.innerHTML = fullText.replace(/\n/g, '<br>');
+            isTyping = false;
+            canTap = true;
+            tapIndicator.classList.add('show');
+        }
+
+        // === ВЗРЫВ ===
+        function createExplosion(x, y, callback) {
+            const colors = ['#ff6b9d', '#ff5722', '#ffeb3b', '#ff9800', '#e91e63', '#fff'];
+            const emojis = ['✨', '💥', '⚡', '🔥', '💫', '⭐'];
+
+            // Частицы
+            for (let i = 0; i < 20; i++) {
+                const p = document.createElement('div');
+                p.className = 'explosion-particle';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.width = (4 + Math.random() * 8) + 'px';
+                p.style.height = p.style.width;
+                p.style.background = colors[Math.floor(Math.random() * colors.length)];
 
                 const angle = Math.random() * Math.PI * 2;
-                const dist = 50 + Math.random() * 200;
-                c.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
-                c.style.setProperty('--ty', Math.sin(angle) * dist - 100 + 'px');
+                const dist = 40 + Math.random() * 100;
+                p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                p.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
 
-                document.body.appendChild(c);
-                setTimeout(() => c.remove(), 2500);
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 700);
             }
 
-            // Показать секретное сообщение
-            document.getElementById('secret').classList.add('show');
+            // Искры-эмодзи
+            for (let i = 0; i < 8; i++) {
+                const s = document.createElement('div');
+                s.className = 'spark';
+                s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                s.style.left = x + 'px';
+                s.style.top = y + 'px';
 
-            // Менять текст кнопки
-            clickCount++;
-            btn.textContent = messages[clickCount % messages.length];
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 50 + Math.random() * 80;
+                s.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                s.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+
+                document.body.appendChild(s);
+                setTimeout(() => s.remove(), 800);
+            }
+
+            if (callback) setTimeout(callback, 200);
         }
+
+        // === ПОКАЗАТЬ ВАРИАНТЫ ===
+        function showChoices(question, choices) {
+            dialogBox.classList.add('hidden');
+            choicesContainer.classList.add('show');
+            questionText.textContent = question;
+
+            // Удалить старые кнопки
+            const oldBtns = choicesContainer.querySelectorAll('.choice-btn');
+            oldBtns.forEach(b => b.remove());
+
+            // Создать кнопки с задержкой взрывов
+            choices.forEach((choice, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+
+                const emojiLabels = ['🖤', '💙', '🤍'];
+                btn.innerHTML = `<span class="emoji-label">${emojiLabels[index]}</span>${choice.text}`;
+
+                btn.addEventListener('click', () => {
+                    handleChoice(choice);
+                });
+
+                choicesContainer.appendChild(btn);
+
+                // Взрыв и появление с задержкой
+                const delay = 600 + index * 800;
+
+                setTimeout(() => {
+                    const rect = btn.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+
+                    createExplosion(cx, cy, () => {
+                        btn.classList.add('visible');
+                    });
+                }, delay);
+            });
+        }
+
+        // === ОБРАБОТКА ВЫБОРА ===
+        function handleChoice(choice) {
+            choicesContainer.classList.remove('show');
+            dialogBox.classList.remove('hidden');
+
+            // Смена фото
+            setPhoto(choice.photo);
+
+            // Показать реакцию
+            speakerName.textContent = 'Русланчекс';
+            typeText(choice.response, () => {
+                // После реакции — показать приз
+                canTap = false;
+                tapIndicator.classList.remove('show');
+
+                setTimeout(() => {
+                    showPrize();
+                }, 2000);
+            });
+        }
+
+        // === ПРИЗ ===
+        function showPrize() {
+            dialogBox.classList.add('hidden');
+            prizeOverlay.classList.add('show');
+
+            // Конфетти
+            const confettiColors = ['#ff6b9d', '#ffeb3b', '#4fc3f7', '#81c784', '#ff8a65', '#ce93d8', '#fff'];
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const c = document.createElement('div');
+                    c.className = 'prize-confetti';
+                    c.style.left = Math.random() * 100 + 'vw';
+                    c.style.top = '-20px';
+                    c.style.width = (6 + Math.random() * 10) + 'px';
+                    c.style.height = (6 + Math.random() * 10) + 'px';
+                    c.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    document.body.appendChild(c);
+                    setTimeout(() => c.remove(), 4000);
+                }, i * 50);
+            }
+
+            // Отправить данные боту
+            if (tg.initData) {
+                tg.sendData(JSON.stringify({
+                    action: 'prize_won',
+                    prize: 'heart',
+                    user: username
+                }));
+            }
+
+            // Тап для продолжения
+            prizeOverlay.addEventListener('click', () => {
+                prizeOverlay.classList.remove('show');
+                dialogBox.classList.remove('hidden');
+                continueAfterPrize();
+            }, { once: true });
+        }
+
+        // === ПОСЛЕ ПРИЗА — ПРОДОЛЖЕНИЕ (добавишь потом) ===
+        function continueAfterPrize() {
+            setPhoto(getBasicPhoto());
+            speakerName.textContent = 'Русланчекс';
+            typeText('это ещё не всё... продолжение следует 😏✨');
+            // Сюда потом добавим следующие диалоги
+        }
+
+        // === СЦЕНАРИЙ ===
+        const scenario = [
+            {
+                type: 'dialog',
+                speaker: 'Русланчекс',
+                text: 'прпрпрпрпрпр дианочка любимая, с 8 марта дорогая, я кое чо подготовил харашо, ты тапай пальчиками кароче',
+                photo: 'auto' // auto = чередование basic/basicZ
+            },
+            {
+                type: 'dialog',
+                speaker: 'Русланчекс',
+                text: 'ета так называемые свидания как в бравл старсе но тута да',
+                photo: 'auto'
+            },
+            {
+                type: 'choice',
+                speaker: 'Русланчекс',
+                question: 'так какую футболку ты надела бы из этих? 👕',
+                photo: 'auto',
+                choices: [
+                    {
+                        text: 'Чёрная футболка',
+                        photo: 'vay.png',
+                        response: 'черни? О чорт ты блек гирл теперь окэээйс 🖤🔥'
+                    },
+                    {
+                        text: 'Синяя футболка',
+                        photo: 'strany.png',
+                        response: 'синий прикол ты типа футболист да у них тоже многа синих футболак ⚽💙'
+                    },
+                    {
+                        text: 'Белая футболка',
+                        photo: 'yra.png',
+                        response: 'белая футболка твои любимые футболки бели все сходится вери вери гуд 🤍✨'
+                    }
+                ]
+            }
+        ];
+
+        // === ЗАПУСК ШАГА ===
+        function runStep(index) {
+            if (index >= scenario.length) return;
+
+            const step = scenario[index];
+
+            if (step.type === 'dialog') {
+                const photo = step.photo === 'auto' ? getBasicPhoto() : step.photo;
+                setPhoto(photo);
+                speakerName.textContent = step.speaker;
+                typeText(step.text);
+                currentStep = index;
+            }
+
+            if (step.type === 'choice') {
+                const photo = step.photo === 'auto' ? getBasicPhoto() : step.photo;
+                setPhoto(photo);
+                speakerName.textContent = step.speaker;
+                typeText(step.question, () => {
+                    // После печати вопроса — показать варианты
+                    canTap = false;
+                    tapIndicator.classList.remove('show');
+                    setTimeout(() => {
+                        showChoices(step.question, step.choices);
+                    }, 500);
+                });
+                currentStep = index;
+            }
+        }
+
+        // === ТАП ПО ЭКРАНУ ===
+        dialogBox.addEventListener('click', (e) => {
+            if (isTyping) {
+                skipTyping();
+                return;
+            }
+
+            if (!canTap) return;
+
+            // Следующий шаг
+            const nextIndex = currentStep + 1;
+            if (nextIndex < scenario.length) {
+                runStep(nextIndex);
+            }
+        });
+
+        // === СТАРТ ===
+        setPhoto('basic.png');
+        currentPhotoIndex = 1; // следующий будет basicZ
+        setTimeout(() => {
+            runStep(0);
+        }, 800);
     </script>
 </body>
 </html>
